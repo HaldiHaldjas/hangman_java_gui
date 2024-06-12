@@ -5,9 +5,9 @@ abiklassid ning meetodid. Kõik abiklassid pole ka kasutusele võetud vaid aja k
 lisame koos mõned mängu jaoks vajalikud funktsionaalsused ning mängu tegelik lõpetamine jääb õpilastele.
 
 # TODO Koos tehtavad funktsionaalsused 
-1. Kategooriate lisamine rippmenüüsse Seadete vahelehel
-2. Kategooria muutmisel muudetakse mudelis valitud kategooriat
-3. Rakendust käivatades saab käsureal anda teise andmebaasi faili
+1. ~~Kategooriate lisamine rippmenüüsse Seadete vahelehel~~
+2. ~~Kategooria muutmisel muudetakse mudelis valitud kategooriat~~
+3. ~~Rakendust käivatades saab käsureal anda teise andmebaasi faili~~
 4. Seaded vahelehele lisa label kasutusel oleva andmebaasi nimega (ilma kaustateeta) - Tunnis iseseisvalt. Enne nuppe, üle kahe veeru, rohelise teksti värviga. Keskele 
 5. Võllapuu piltide näitamine GameBoardil
 6. Uue mängu alustamine (mängu aeg käivitub) ja katkestamine (mängu aeg seiskub)
