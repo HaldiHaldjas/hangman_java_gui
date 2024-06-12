@@ -1,0 +1,1187 @@
+Index: src/views/View.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package views;\n\nimport models.Model;\nimport views.panels.GameBoard;\nimport views.panels.LeaderBoard;\nimport views.panels.Settings;\n\nimport javax.swing.*;\nimport java.awt.*;\n\n/**\n * See on põhivaade ehk JFrame kuhu peale pannakse kõik muud JComponendid mida on mänguks vaja.\n * JFrame vaikimisi (default) aknahaldur (Layout Manager) on BorderLayout\n */\npublic class View extends JFrame {\n    /**\n     * Klassisisene, mille väärtus saadakse VIew konstruktorist ja loodud MainApp-is\n     */\n    private Model model;\n    /**\n     * Vaheleht (TAB) Seaded ehk avaleht\n     */\n    private Settings settings;\n    /**\n     * Vaheleht (TAB) Mängulaud\n     */\n    private GameBoard gameBoard;\n    /**\n     * Vaheleht (TAB) Edetabel\n     */\n    private LeaderBoard leaderBoard;\n    /**\n     * Sellele paneelile tulevad kolm eelnevalt loodud vahelehte (Settings, GameBoard ja LeaderBoard)\n     */\n    private JTabbedPane tabbedPane;\n\n    /**\n     * View konstruktor. Põhiakna (JFrame) loomine ja sinna paneelide (JPanel) lisamine ja JComponendid\n     * @param model mudel mis loodi MainApp-is\n     */\n    public View(Model model) {\n        this.model = model; // MainApp-is loodud mudel\n\n        setTitle(\"Poomismäng 2024 õpilased\"); // JFrame titelriba tekst\n        setPreferredSize(new Dimension(500, 250));\n        // TODO arenduse lõpus keela akna suurendamine\n        // setResizable(false);\n        getContentPane().setBackground(new Color(250,210,205)); // JFrame taustavärv (rõõsa)\n\n        // Loome kolm vahelehte (JPanel)\n        settings = new Settings(model);\n        gameBoard = new GameBoard(model);\n        leaderBoard = new LeaderBoard(model, this);\n\n        createTabbedPanel(); // Loome kolme vahelehega tabbedPaneli\n\n        add(tabbedPane, BorderLayout.CENTER); // Paneme tabbedPaneli JFramele. JFrame layout on default BorderLayout\n    }\n\n    private void createTabbedPanel() {\n        tabbedPane = new JTabbedPane(); // Tabbed paneli loomine\n\n        tabbedPane.addTab(\"Seaded\", settings); // Vaheleht Seaded paneeliga settings\n        tabbedPane.addTab(\"Mängulaud\", gameBoard); // Vaheleht Mängulaud paneeliga gameBoard\n        tabbedPane.addTab(\"Edetabel\", leaderBoard); // Vaheleht Mängulaud paneeliga gameBoard\n\n        // TODO arenduse lõpus mängulaua vahelehte klikkida ei saa\n        // tabbedPane.setEnabledAt(1, false); // Vahelehte mängulaud ei saa klikkida\n    }\n\n    /**\n     * Meetod mis tekitab mängimise olukorra.\n     */\n    public void hideButtons() {\n        tabbedPane.setEnabledAt(0, false); // Keela seaded vaheleht\n        tabbedPane.setEnabledAt(2, false); // Keela edetabel vaheleht\n        tabbedPane.setEnabledAt(1, true); // Luba mängulaud vaheleht\n        tabbedPane.setSelectedIndex(1); // Tee mängulaud vaheleht aktiivseks\n\n        gameBoard.getBtnSend().setEnabled(true); // Nupp Saada on klikitav\n        gameBoard.getBtnCancel().setEnabled(true); // Nupp Katkesta on klikitav\n        gameBoard.getTxtChar().setEnabled(true); // Sisestuskast on aktiivne\n    }\n\n    /**\n     * Meetod mis tekitab mitte mängimise olukorra. Vastupidi hideButtons() meetodil\n     */\n    public void showButtons() {\n        tabbedPane.setEnabledAt(0, true); // Luba seaded vaheleht\n        tabbedPane.setEnabledAt(2, true); // Luba edetabel vaheleht\n        tabbedPane.setEnabledAt(1, false); // Keela mängulaud vaheleht\n        // tabbedPane.setSelectedIndex(0); // Tee seaded vaheleht aktiivseks. Peale mängu pole see hea, sest ei näe lõppseisus\n\n        gameBoard.getBtnSend().setEnabled(false); // Nupp Saada ei ole klikitav\n        gameBoard.getBtnCancel().setEnabled(false); // Nupp Katkesta ei ole klikitav\n        gameBoard.getTxtChar().setEnabled(false); // Sisestuskast ei ole aktiivne\n    }\n\n    // GETTERID Paneelide (vahelehetede)\n    public Settings getSettings() {\n        return settings;\n    }\n\n    public GameBoard getGameBoard() {\n        return gameBoard;\n    }\n\n    public LeaderBoard getLeaderBoard() {\n        return leaderBoard;\n    }\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/views/View.java b/src/views/View.java
+--- a/src/views/View.java	(revision 40f772dffff445628ec4346ce08c378f403117fa)
++++ b/src/views/View.java	(date 1718197789772)
+@@ -1,12 +1,16 @@
+ package views;
+ 
++import helpers.GameTimer;
++import helpers.RealTimer;
+ import models.Model;
++import models.datastructures.DataScore;
+ import views.panels.GameBoard;
+ import views.panels.LeaderBoard;
+ import views.panels.Settings;
+ 
+ import javax.swing.*;
+ import java.awt.*;
++import java.time.format.DateTimeFormatter;
+ 
+ /**
+  * See on põhivaade ehk JFrame kuhu peale pannakse kõik muud JComponendid mida on mänguks vaja.
+@@ -34,6 +38,11 @@
+      */
+     private JTabbedPane tabbedPane;
+ 
++    // TODO realtimer
++    private GameTimer gameTimer;
++
++    private RealTimer realTimer;
++
+     /**
+      * View konstruktor. Põhiakna (JFrame) loomine ja sinna paneelide (JPanel) lisamine ja JComponendid
+      * @param model mudel mis loodi MainApp-is
+@@ -55,6 +64,13 @@
+         createTabbedPanel(); // Loome kolme vahelehega tabbedPaneli
+ 
+         add(tabbedPane, BorderLayout.CENTER); // Paneme tabbedPaneli JFramele. JFrame layout on default BorderLayout
++        // mänguaja objekti loomine
++        gameTimer = new GameTimer(this);
++
++        // Loome ja "käivitame" päris aja
++        realTimer = new RealTimer(this); // näitab kellaaega
++        realTimer.start();
++
+     }
+ 
+     private void createTabbedPanel() {
+@@ -94,6 +110,7 @@
+         gameBoard.getBtnSend().setEnabled(false); // Nupp Saada ei ole klikitav
+         gameBoard.getBtnCancel().setEnabled(false); // Nupp Katkesta ei ole klikitav
+         gameBoard.getTxtChar().setEnabled(false); // Sisestuskast ei ole aktiivne
++        gameBoard.getTxtChar().setText("");
+     }
+ 
+     // GETTERID Paneelide (vahelehetede)
+@@ -108,4 +125,42 @@
+     public LeaderBoard getLeaderBoard() {
+         return leaderBoard;
+     }
++
++    /**
++     * mänguaja objekt, .stop().setRunning() jne
++     * return mänguaja objekt
++     * */
++
++    public GameTimer getGameTimer() {
++        return gameTimer;
++    }
++
++    public void updateScoresTable() {
++        for(DataScore ds : model.getDataScores()) {
++            String gameTime = ds.gameTime().format(DateTimeFormatter.ofPattern("dd:MM:yyyy HH:mm:ss"));
++            // System.out.println(gameTime);
++            String name = ds.playerName();
++            String word = ds.word();
++            String chars = ds.missedChars();
++            String humanTime = convertSecToMMSS(ds.timeSeconds()); // täisarvsekundid vormindatud
++            // Lisab rea DeFaultTableModelisse mudelis
++            model.getDtm().addRow(new Object[]{gameTime, name, word, chars, humanTime});
++
++        }
++    }
++
++    /**
++     * Muudab aja min on sekundites kujule mm:ss
++     * 90 sekon 01:30
++     * @param seconds
++     * @return vormindatud string
++     * */
++
++
++    private String convertSecToMMSS(int seconds) {
++        // sekundid on vaja teha oigeks
++        int min = seconds / 60;
++        int sec = seconds % 60;
++        return String.format("%02d:%02d", min, sec);
++    }
+ }
+Index: src/views/panels/LeaderBoard.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package views.panels;\n\nimport models.Model;\nimport views.View;\n\nimport javax.swing.*;\nimport java.awt.*;\n\n/**\n * See on edetabeli klass. See näitab andmebaasist loetud edetabelit. Seda ei saa mängimise ajal\n * vaadata.\n */\npublic class LeaderBoard extends JPanel {\n    /**\n     * Klassisisene mudel, mille väärtus saadakse View konstruktorist ja loodud MainApp-is\n     */\n    private final Model model;\n    /**\n     * Klassisisene vaade, mille väärtus saadakse otse View-st\n     */\n    private final View view;\n\n    public LeaderBoard(Model model, View view) {\n        this.model = model;\n        this.view = view;\n\n        setBackground(new Color(250, 150, 215)); // Leaderboard paneeli taustavärv\n    }\n\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/views/panels/LeaderBoard.java b/src/views/panels/LeaderBoard.java
+--- a/src/views/panels/LeaderBoard.java	(revision 40f772dffff445628ec4346ce08c378f403117fa)
++++ b/src/views/panels/LeaderBoard.java	(date 1718198514721)
+@@ -1,9 +1,14 @@
+ package views.panels;
+ 
++import models.Database;
+ import models.Model;
+ import views.View;
+ 
+ import javax.swing.*;
++import javax.swing.border.EmptyBorder;
++import javax.swing.table.DefaultTableCellRenderer;
++import javax.swing.table.DefaultTableModel;
++import javax.xml.crypto.Data;
+ import java.awt.*;
+ 
+ /**
+@@ -19,12 +24,63 @@
+      * Klassisisene vaade, mille väärtus saadakse otse View-st
+      */
+     private final View view;
++    /**
++     * edetabeli päis, mida näeb Edetabeli vahelehel
++     * */
++    private String[] heading = new String[]{"Kuupäev", "Nimi", "Sõna", "Tähed", "Mänguaeg"};
++    /**
++     * Loome tabeli teostse päisega, kuid andmeid ei ole
++     * */
++
++    /**
++     * Leaderboard konstruktor
++     * @param model loodud mudel MainAppis
++     * @param view loodud View MainAppis
++     * */
++
++    private DefaultTableModel dtm = new DefaultTableModel(heading, 0);
++    private JTable table = new JTable(dtm);
+ 
+     public LeaderBoard(Model model, View view) {
+         this.model = model;
+         this.view = view;
+ 
++        setLayout(new BorderLayout());
+         setBackground(new Color(250, 150, 215)); // Leaderboard paneeli taustavärv
++        setBorder(new EmptyBorder(5,5,5,5));
++
++        model.setDtm(dtm);
++        createLeaderBoard(); // Loob edetabeli tabeli paneelile
++    }
++
++    private void createLeaderBoard() {
++        // kerimisriba tabeli vaikimisi paremale serva vajaduseks
++        JScrollPane sp = new JScrollPane(table);
++        add(sp, BorderLayout.CENTER);
++
++        // Tabeli esimene veerg
++
++        // kuupaeva kasti pikkus
++        table.getColumnModel().getColumn(0).setPreferredWidth(120);
++        // tabeli sisu pole muudetav
++        table.setDefaultEditor(Object.class, null);
++
++        // 4. Lahtri keskele joondamine
++        DefaultTableCellRenderer cellRenderer = new DefaultTableCellRenderer();
++        cellRenderer.setHorizontalAlignment(JLabel.CENTER);
++        table.getColumnModel().getColumn(4).setCellRenderer(cellRenderer);
++        // table.getColumnModel().getColumn(0).setCellRenderer(cellRenderer); // esimene veerg keskele joondatuna
++
++
++        // kirjuta tabelist sisu mudelisse
++        new Database(model).selectScores(); // votab tabelist info ja kirjutab listi
++        // kontroll kas andmeid on ja uuenda tabalit
++        if(!model.getDataScores().isEmpty()) {
++            view.updateScoresTable();
++
++        } else {
++            JOptionPane.showMessageDialog(view, "Esmalt tuleb mängida");
++        }
+     }
+ 
+ }
+Index: src/views/panels/GameBoard.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package views.panels;\n\nimport models.Model;\n\nimport javax.swing.*;\nimport javax.swing.border.EmptyBorder;\nimport java.awt.*;\nimport java.awt.image.BufferedImage;\n\npublic class GameBoard extends JPanel {\n    /**\n     * Klassisisene mudel, mille väärtus saadakse View konstruktorist ja loodud MainApp-is\n     */\n    private Model model;\n    /**\n     * GridBagLayout jaoks JComponent paigutamiseks \"Excel\" variandis\n     */\n    private GridBagConstraints gbc = new GridBagConstraints();\n    /**\n     * See silt (JLabel) näitab mängu aega kujul: mm:ss\n     */\n    private JLabel lblGameTime;\n    /**\n     * Sisestuskast kuhu sisestada täht\n     */\n    private JTextField txtChar;\n    /**\n     * See silda sisaldab tähti mis on valed äraarvatavas sünas\n     */\n    private JLabel lblError;\n    /**\n     * Sisestatud tähe saatmiseks rakendusele kontrolliks\n     */\n    private JButton btnSend;\n    /**\n     * Mängu lõpetamine / mängust loobumine\n     */\n    private JButton btnCancel;\n    /**\n     * See sisaldab pilti võllapuu jaoks (jah, label on pildi näitamiseks)\n     */\n    private JLabel lblImage;\n    /**\n     * See näitab äraarvatavat sõna kasutajale kujul: T _ _ E M _ S\n     */\n    private JLabel lblResult;\n\n    public GameBoard(Model model) {\n        this.model = model;\n\n        setLayout(new BorderLayout()); // Määrame sellele paneelile (GameBoard) teise aknahalduri (Layout Manager)\n        setBackground(new Color(200,255,175)); // Määrame paneelile uue taustavärvi (õrn roheline)\n        setBorder(new EmptyBorder(5,5,5,5)); // Paneelile ümebrringi tühi ruumi. Näeb taustavärvi\n\n        gbc.fill = GridBagConstraints.HORIZONTAL; // Täidab lahtri horisontaalselt (kõik lahtrid on \"sama laiad\")\n        gbc.insets = new Insets(2,2,2,2); // Iga lahtri ümber 2px tühja ruumi\n        //gbc.anchor = GridBagConstraints.WEST; // \"Joondab vasakult\"\n\n        JPanel components = new JPanel(new GridBagLayout()); // Paneel kuhu pannakse enamus selle paneeli kolmponentidest\n        components.setBackground(new Color(140,185,250)); // Komponent paneeli taustavärv (miski sinine)\n        components.setBorder(new EmptyBorder(2,2,2,2)); // Paneelile ümebrringi tühi ruumi.\n\n        JPanel pnlResult = new JPanel(new FlowLayout()); // See panell näitab äraarvatavat sõna (T _ _ E M _ S)\n        pnlResult.setBackground(new Color(250,200,235)); // Äraarvatava sõna paneeli taustavärv (rõõsa laadne)\n\n        createUIComponents(components); // Enamus komponente siin paneelil\n        createImagePlace(components); // Ainult võllapuu pildi osa\n        createResultPlace(pnlResult); // Äraarvatava sõna paneeli loomine\n\n        add(components, BorderLayout.CENTER); // Paiguta komponentide paneel mängulauale (keskele)\n        add(pnlResult, BorderLayout.NORTH); // Paiguta äraarvatava sõna paneel ülesse serva\n    }\n\n    /**\n     * Joonistab mänguväljale enamus komponendid (v.a. Rssult ja Image)\n     * @param components paneeli kuhu komponendid pannakse\n     */\n    private void createUIComponents(JPanel components) {\n        // Esimene rida (mänguaeg)\n        lblGameTime = new JLabel(\"Siia tuleb mänguaeg\", JLabel.CENTER);\n        gbc.gridx = 0;\n        gbc.gridy = 0;\n        gbc.gridwidth = 2; // Mänguaeg üle kahe lahtri keskele\n        gbc.weightx = 1.0; // \"Suurenevad sujuvalt\"\n        components.add(lblGameTime, gbc);\n\n        // Teine rida (Silt ja Sisestuskast)\n        JLabel lblChar = new JLabel(\"Sisesta täht: \");\n        gbc.gridx = 0;\n        gbc.gridy = 1;\n        gbc.gridwidth = 1; // Iga komponent ühte lahtrisse mitte üle kahe\n        components.add(lblChar, gbc);\n\n        /*\n         * Loome sisestuskasti ja see on kogu aeg fookuses (JTextFIeld)\n         * https://stackoverflow.com/questions/4640138/setting-the-focus-to-a-text-field\n         */\n        txtChar = new JTextField(\"\", 10) {\n            @Override\n            public void addNotify() {\n                super.addNotify();\n                requestFocus();\n            }\n        };\n        txtChar.setEnabled(false); // Vaikimisi lahtrisse kirjuta ei saa\n        txtChar.setHorizontalAlignment(JTextField.CENTER); // Kirjuta lahtri keskele\n        // TODO siia rida, et tekstikasti saab ainult ühe tähe kirjutada\n        gbc.gridx = 1;\n        gbc.gridy = 1;\n        components.add(txtChar, gbc);\n\n        // Kolmas rida (Silt üle kahe veeru)\n        lblError = new JLabel(\"Vigased tähed: \");\n        gbc.gridx = 0;\n        gbc.gridy = 2;\n        gbc.gridwidth = 2; // Üle kahe lahtri (kaks lahtrit üheks)\n        components.add(lblError, gbc);\n\n        // Neljas rida\n        btnSend = new JButton(\"Saada\");\n        btnSend.setEnabled(false); // Nuppu ei saa klikkida\n        gbc.gridx = 0;\n        gbc.gridy = 3;\n        gbc.gridwidth = 1; // Iga komponent ühte lahtrisse\n        components.add(btnSend, gbc);\n\n        btnCancel = new JButton(\"Katkesta\");\n        btnCancel.setEnabled(false);\n        gbc.gridx = 1;\n        gbc.gridy = 3;\n        components.add(btnCancel, gbc);\n\n    }\n\n    /**\n     * Loob võllapuu pildikasti kus näitab jooksvat pilti\n     * @param components kuhu lisatakse komponent (JLabel)\n     */\n    private void createImagePlace(JPanel components) {\n        lblImage = new JLabel();\n        // TODO pildid mällu lugemata, seega võllapuud ei näe vaid värviline pildikast. Asendada temporaryImage() õigega\n        ImageIcon imageIcon = new ImageIcon(temporaryImage()); // Sulgude osa täita õigesti ja pilt on maagiliselt näha\n        lblImage.setIcon(imageIcon);\n\n        gbc.gridx = 2; // Kolmas veerg\n        gbc.gridy = 0; // Esimene rida\n        gbc.gridheight = 4; // Label üle 4 või 5 rea kõrge (vajab mängimist)\n        components.add(lblImage, gbc);\n\n    }\n\n    /**\n     * Tegemist on ajutise pildiga kuna piltide kausta (images) pole algselt loetud\n     * @return pilt suurusega 125x125 punase värviga\n     * <a href=\"https://stackoverflow.com/questions/47137636/swing-new-imageicon-from-color\">Viide õpetusele</a>\n     */\n    private BufferedImage temporaryImage() {\n        BufferedImage image = new BufferedImage(125, 125, BufferedImage.TYPE_INT_RGB);\n        Graphics2D graphics = image.createGraphics();\n\n        graphics.setPaint(new Color(255, 0, 0));\n        graphics.fillRect(0, 0, image.getWidth(), image.getHeight());\n        return image;\n    }\n\n    /**\n     * Äraarvatava sõna paneeli loomine\n     * @param pnlResult paneel kuhu näidatakse äraarvatavat sõna (T _ _ E M _ S)\n     */\n    private void createResultPlace(JPanel pnlResult) {\n        lblResult = new JLabel(\"T _ _ E M _ S\");\n        lblResult.setFont(new Font(\"Courier New\", Font.BOLD, 24)); // Kirjastiil ja suurus äraarvataval sõnal\n        pnlResult.add(lblResult); // See paneel (pnlResult) on FlowLayout mitte GridBagLayout!\n    }\n\n    // Komponentide getterid\n\n    public JLabel getLblGameTime() {\n        return lblGameTime;\n    }\n\n    public JTextField getTxtChar() {\n        return txtChar;\n    }\n\n    public JLabel getLblError() {\n        return lblError;\n    }\n\n    public JButton getBtnSend() {\n        return btnSend;\n    }\n\n    public JButton getBtnCancel() {\n        return btnCancel;\n    }\n\n    public JLabel getLblImage() {\n        return lblImage;\n    }\n\n    public JLabel getLblResult() {\n        return lblResult;\n    }\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/views/panels/GameBoard.java b/src/views/panels/GameBoard.java
+--- a/src/views/panels/GameBoard.java	(revision 40f772dffff445628ec4346ce08c378f403117fa)
++++ b/src/views/panels/GameBoard.java	(date 1718190876536)
+@@ -1,5 +1,6 @@
+ package views.panels;
+ 
++import helpers.TextFieldLimit;
+ import models.Model;
+ 
+ import javax.swing.*;
+@@ -99,12 +100,16 @@
+             @Override
+             public void addNotify() {
+                 super.addNotify();
++                // kursor vilkuma
+                 requestFocus();
+             }
+         };
+         txtChar.setEnabled(false); // Vaikimisi lahtrisse kirjuta ei saa
+         txtChar.setHorizontalAlignment(JTextField.CENTER); // Kirjuta lahtri keskele
++
+         // TODO siia rida, et tekstikasti saab ainult ühe tähe kirjutada
++        txtChar.setDocument(new TextFieldLimit(1)); // 1 täht kirjutamiseks
++
+         gbc.gridx = 1;
+         gbc.gridy = 1;
+         components.add(txtChar, gbc);
+@@ -139,7 +144,8 @@
+     private void createImagePlace(JPanel components) {
+         lblImage = new JLabel();
+         // TODO pildid mällu lugemata, seega võllapuud ei näe vaid värviline pildikast. Asendada temporaryImage() õigega
+-        ImageIcon imageIcon = new ImageIcon(temporaryImage()); // Sulgude osa täita õigesti ja pilt on maagiliselt näha
++        // ImageIcon imageIcon = new ImageIcon(temporaryImage()); // Sulgude osa täita õigesti ja pilt on maagiliselt näha
++        ImageIcon imageIcon = new ImageIcon(model.getImageFiles().getLast());
+         lblImage.setIcon(imageIcon);
+ 
+         gbc.gridx = 2; // Kolmas veerg
+Index: src/models/Model.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package models;\n\npublic class Model {\n    private final String chooseCategory = \"Kõik kategooriad\";\n    /**\n     * See on vaikimisi andmebaasi fail kui käsurealt uut ei leotud. Andmebaasi tabelit nimed ja struktuurid peavad\n     * samad olema, kuid andmed võivad erinevad olla.\n     *  hangman_words_ee.db - Eestikeelsed sõnad, edetabel on tühi\n     *  hangman_words_en.db - Inglisekeelsed sõnad, edetabel on tühi\n     *  hangman_words_ee_test.db - Eestikeelsed sõnad, edetabel EI ole tühi\n     */\n    private String databaseFile = \"hangman_words_ee_test.db\";\n\n    private String selectedCategory; // Vaikimisi valitud kategooria\n\n    public Model() {\n        new Database(this); // Loome andmebaasi ühenduse\n        selectedCategory = chooseCategory; // Vaikimisi \"Kõik kategooriad\"\n    }\n\n    /**\n     * Rippmenüü esimene valik enne kategooriaid\n     * @return teksti \"Kõik kategooriad\"\n     */\n    public String getChooseCategory() {\n        return chooseCategory;\n    }\n\n    /**\n     * Millise andmebaasiga on tegemist\n     * @return andmebaasi failinimi\n     */\n    public String getDatabaseFile() {\n        return databaseFile;\n    }\n\n    /**\n     * Seadistab uue andmebaasi failinime, kui see saadi käsurealt\n     * @param databaseFile uus andmebaasi failinimi\n     */\n    public void setDatabaseFile(String databaseFile) {\n        this.databaseFile = databaseFile;\n    }\n\n    /**\n     * Valitud kategoori\n     * @return tagastab valitud kategooria\n     */\n    public String getSelectedCategory() {\n        return selectedCategory;\n    }\n\n    /**\n     * Seadistab valitud kategooria\n     * @param selectedCategory uus valitud kategooria\n     */\n    public void setSelectedCategory(String selectedCategory) {\n        this.selectedCategory = selectedCategory;\n    }\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/models/Model.java b/src/models/Model.java
+--- a/src/models/Model.java	(revision 40f772dffff445628ec4346ce08c378f403117fa)
++++ b/src/models/Model.java	(date 1718193443477)
+@@ -1,5 +1,11 @@
+ package models;
+ 
++import models.datastructures.DataScore;
++
++import javax.swing.table.DefaultTableModel;
++import java.io.File;
++import java.util.*;
++
+ public class Model {
+     private final String chooseCategory = "Kõik kategooriad";
+     /**
+@@ -12,12 +18,44 @@
+     private String databaseFile = "hangman_words_ee_test.db";
+ 
+     private String selectedCategory; // Vaikimisi valitud kategooria
++    private String[] cbmCategories;
++    // Rippmenüü sisu
++    // nii getter kui setter vaja
++
++    private String imagesFolder = "images"; // võllapuu piltide kaust
++    /**
++     * võllapuu pildid õiges jörjekorras
++     *
++     */
+ 
+-    public Model() {
++    private List<String> imageFiles = new ArrayList<>();
++    private DefaultTableModel dtm; // edetebeli tegemiseks
++    private List<DataScore> dataScores = new ArrayList<>(); // andmed, mida tabelist loeb.
++    /**
++     * Tabeli mugavaks kasutamiseks
++     */
++
++
++    public Model(String dbName) {
++        if(dbName != null) {
++            this.databaseFile = dbName;
++        }
++     //   System.out.println(this.databaseFile); Testimine käsurealt andmebaasi nime
+         new Database(this); // Loome andmebaasi ühenduse
++        readImageFolder();
+         selectedCategory = chooseCategory; // Vaikimisi "Kõik kategooriad"
+     }
+ 
++    private void readImageFolder() {
++        File folder = new File(imagesFolder); // Loo kausta objekt
++        File[] files = folder.listFiles(); // loeb kõik failid File object listi
++        for(File file : Objects.requireNonNull(files)) {
++            imageFiles.add(file.getAbsolutePath());
++        }
++        Collections.sort(imageFiles);
++        System.out.println(imageFiles);
++    }
++
+     /**
+      * Rippmenüü esimene valik enne kategooriaid
+      * @return teksti "Kõik kategooriad"
+@@ -57,4 +95,53 @@
+     public void setSelectedCategory(String selectedCategory) {
+         this.selectedCategory = selectedCategory;
+     }
++
++    /**
++     * Kategooriate nimed
++     * @return kategooriate nimed
++     */
++
++    public String[] getCbmCategories() {
++        return cbmCategories;
++    }
++
++    /**
++     * Seadistab uued kategooriate nimed
++     * @param cbmCategories kategooriate massiiv
++     */
++    public void setCbmCategories(String[] cbmCategories) {
++        this.cbmCategories = cbmCategories;
++    }
++
++    public List<String> getImageFiles() {
++        return imageFiles;
++    }
++
++    public DefaultTableModel getDtm() {
++        return dtm;
++    }
++    /**
++     * Seadistame uue DefaultTableModeli
++     * @param dtm uus dtm*/
++
++    public void setDtm(DefaultTableModel dtm) {
++        this.dtm = dtm;
++    }
++    /**
++     * Loetud edetabeli andmed andmebaasist
++     * @return edetabeli andmed
++     */
++
++    public List<DataScore> getDataScores() {
++        return dataScores;
++    }
++    /**
++     * Muudab edetabeli andmeid
++     * @param dataScores uued andmed edetabeli jaoks
++     * */
++
++    public void setDataScores(List<DataScore> dataScores) {
++        this.dataScores = dataScores;
++    }
++    // control + enter - generate
+ }
+Index: src/models/Database.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package models;\n\nimport java.sql.Connection;\nimport java.sql.DriverManager;\nimport java.sql.SQLException;\n\n/**\n * See klass tegeleb andmebaasi ühenduse ja \"igasuguste\" päringutega tabelitest.\n * Alguses on ainult ühenduse jaoks funktsionaalsus\n */\npublic class Database {\n    /**\n     * Algselt ühendust pole\n     */\n    private Connection connection = null;\n    /**\n     * Andmebaasi ühenduse string\n     */\n    private String databaseUrl;\n    /**\n     * Loodud mudel\n     */\n    private Model model;\n\n    /**\n     * Klassi andmebaas konstruktor\n     * @param model loodud mudel\n     */\n    public Database(Model model) {\n        this.model = model;\n        this.databaseUrl = \"jdbc:sqlite:\" + model.getDatabaseFile();\n    }\n\n    /**\n     * Loob andmebaasiga ühenduse\n     * @return andmebaasi ühenduse\n     */\n    private Connection dbConnection() throws SQLException {\n        // https://stackoverflow.com/questions/13891006/\n        if(connection != null) {\n            connection.close();\n        }\n        connection = DriverManager.getConnection(databaseUrl);\n        return connection;\n    }\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/models/Database.java b/src/models/Database.java
+--- a/src/models/Database.java	(revision 40f772dffff445628ec4346ce08c378f403117fa)
++++ b/src/models/Database.java	(date 1718196659234)
+@@ -1,8 +1,12 @@
+ package models;
+ 
+-import java.sql.Connection;
+-import java.sql.DriverManager;
+-import java.sql.SQLException;
++import models.datastructures.DataScore;
++
++import java.sql.*;
++import java.time.LocalDateTime;
++import java.time.format.DateTimeFormatter;
++import java.util.ArrayList;
++import java.util.List;
+ 
+ /**
+  * See klass tegeleb andmebaasi ühenduse ja "igasuguste" päringutega tabelitest.
+@@ -29,6 +33,32 @@
+     public Database(Model model) {
+         this.model = model;
+         this.databaseUrl = "jdbc:sqlite:" + model.getDatabaseFile();
++        // kõik andmebaasiga seotud päringud. Kõik mida on vaja lugeda ja kirjutada on selles failis
++        this.selectUniqueCategories();
++    }
++
++    private void selectUniqueCategories() {
++        String sql = "SELECT DISTINCT(category) as category FROM words ORDER BY category";
++        List<String> categories = new ArrayList<>(); //Tühi kategooriate list
++        try {
++            Connection connection = this.dbConnection();
++            Statement stmt = connection.createStatement();
++            ResultSet rs = stmt.executeQuery(sql);
++            while (rs.next()) {
++                String category = rs.getString("category");
++                categories.add(category);
++            }
++            categories.add(0,model.getChooseCategory()); // Esimeseks "Kõik kategooriad"
++            // list teha stringi massiiviks. Konverteerida ühest teise
++            String[] result = categories.toArray(new String[0]); // List<String> => String[]
++            model.setCbmCategories(result); // Seadista kategoorias mudelisse
++            // System.out.println(categories);
++
++            connection.close(); // Andmebaasi ühendus sulgeda
++
++        } catch (SQLException e) {
++            throw new RuntimeException(e);
++        }
+     }
+ 
+     /**
+@@ -39,8 +69,41 @@
+         // https://stackoverflow.com/questions/13891006/
+         if(connection != null) {
+             connection.close();
++
+         }
+         connection = DriverManager.getConnection(databaseUrl);
+         return connection;
+     }
++
++    public void selectScores() {
++        String sql = "SELECT * FROM scores ORDER BY gametime, playertime DESC, playername;";
++        List<DataScore> data = new ArrayList<>();
++        try {
++            Connection connection = this.dbConnection();
++            Statement stmt = connection.createStatement();
++            ResultSet rs = stmt.executeQuery(sql);
++            model.getDataScores().clear(); // tyhjenda listi sisu mudelis
++
++            while (rs.next()) {
++                // tulemusest saadud aeg
++                String datetime = rs.getString("playertime"); // veeru nimi tabelis
++                LocalDateTime playerTime = LocalDateTime.parse(datetime,
++                        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
++                String playerName = rs.getString("playername");
++                String guessWord = rs.getString("guessword");
++                String wrongChar = rs.getString("wrongcharacters");
++                int timeSeconds = rs.getInt("gametime");
++                // lisab listi
++                data.add(new DataScore(playerTime, playerName, guessWord, wrongChar, timeSeconds));
++                // konvert andmebaasile sobivassevormingusse
++                // System.out.println(datetime + " | " + playerTime); // esimene on string, teine kuupaeva objekt
++            }
++
++            model.setDataScores(data); // muuda andmed mudelist
++            connection.close();
++
++        } catch (SQLException e) {
++            throw new RuntimeException(e.getMessage());
++        }
++    }
+ }
+Index: src/controllers/Controller.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package controllers;public class Controller {\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/controllers/Controller.java b/src/controllers/Controller.java
+--- a/src/controllers/Controller.java	(revision 40f772dffff445628ec4346ce08c378f403117fa)
++++ b/src/controllers/Controller.java	(date 1718189576246)
+@@ -1,2 +1,16 @@
+-package controllers;public class Controller {
++package controllers;
++
++import listeners.ButtonCancel;
++import listeners.ButtonNew;
++import listeners.ComboboxChange;
++import models.Model;
++import views.View;
++
++public class Controller {
++    public Controller(Model model, View view) {
++        view.getSettings().getCmbCategory().addItemListener(new ComboboxChange(model));//Comboboxi funktsionaalsus
++        // uus mäng funktsionaalsus
++        view.getSettings().getBtnNewGame().addActionListener(new ButtonNew(model, view));
++        view.getGameBoard().getBtnCancel().addActionListener(new ButtonCancel(model, view));
++    }
+ }
+Index: src/listeners/ButtonNew.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package listeners;public class ButtonNew {\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/listeners/ButtonNew.java b/src/listeners/ButtonNew.java
+--- a/src/listeners/ButtonNew.java	(revision 40f772dffff445628ec4346ce08c378f403117fa)
++++ b/src/listeners/ButtonNew.java	(date 1718190181363)
+@@ -1,2 +1,41 @@
+-package listeners;public class ButtonNew {
++package listeners;
++
++import models.Model;
++import views.View;
++
++import java.awt.event.ActionEvent;
++import java.awt.event.ActionListener;
++
++public class ButtonNew implements ActionListener {
++
++    private Model model;
++    private View view;
++
++    public ButtonNew(Model model, View view) {
++        this.model = model;
++        this.view = view;
++    }
++
++    @Override
++    public void actionPerformed(ActionEvent e) {
++        // testimiseks
++        System.out.println("Klikk");
++        view.hideButtons();
++        if(!view.getGameTimer().isRunning()) { // kui mänguaeg ei jookse, tuleb panna aeg 0
++            view.getGameTimer().setSeconds(0);
++            view.getGameTimer().setMinutes(0);
++            view.getGameTimer().setRunning(true); // pane aeg jooksma, kontroll, kas aeg jookseb
++            view.getGameTimer().startTime(); // käivita aeg
++
++        } else {
++            view.getGameTimer().stopTime();
++            view.getGameTimer().setRunning(false);
++        }
++
++// todo enda arendus
++        // label tühjaks, leida andmebaasisit juhuslik sõna,
++        // leida tähtede arv allkriips
++        // 1 meetod samasse klassi juhuslik sõna
++
++    }
+ }
+Index: src/listeners/ButtonCancel.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package listeners;public class ButtonCancel {\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/listeners/ButtonCancel.java b/src/listeners/ButtonCancel.java
+--- a/src/listeners/ButtonCancel.java	(revision 40f772dffff445628ec4346ce08c378f403117fa)
++++ b/src/listeners/ButtonCancel.java	(date 1718190181356)
+@@ -1,2 +1,26 @@
+-package listeners;public class ButtonCancel {
++package listeners;
++
++import models.Model;
++import views.View;
++
++import java.awt.event.ActionEvent;
++import java.awt.event.ActionListener;
++
++public class ButtonCancel implements ActionListener {
++
++    private Model model;
++    private View view;
++
++    public ButtonCancel(Model model, View view) {
++        this.model = model;
++        this.view = view;
++    }
++
++    @Override
++    public void actionPerformed(ActionEvent e) {
++        System.out.println("Katkesta");
++        view.showButtons();
++        view.getGameTimer().stopTime();
++        view.getGameTimer().setRunning(false);
++    }
+ }
+Index: .idea/inspectionProfiles/Project_Default.xml
+===================================================================
+diff --git a/.idea/inspectionProfiles/Project_Default.xml b/.idea/inspectionProfiles/Project_Default.xml
+deleted file mode 100644
+--- a/.idea/inspectionProfiles/Project_Default.xml	(revision 40f772dffff445628ec4346ce08c378f403117fa)
++++ /dev/null	(revision 40f772dffff445628ec4346ce08c378f403117fa)
+@@ -1,10 +0,0 @@
+-<component name="InspectionProjectProfileManager">
+-  <profile version="1.0">
+-    <option name="myName" value="Project Default" />
+-    <inspection_tool class="SpellCheckingInspection" enabled="true" level="TYPO" enabled_by_default="true">
+-      <option name="processCode" value="true" />
+-      <option name="processLiterals" value="true" />
+-      <option name="processComments" value="false" />
+-    </inspection_tool>
+-  </profile>
+-</component>
+\ No newline at end of file
+Index: .idea/uiDesigner.xml
+===================================================================
+diff --git a/.idea/uiDesigner.xml b/.idea/uiDesigner.xml
+deleted file mode 100644
+--- a/.idea/uiDesigner.xml	(revision 40f772dffff445628ec4346ce08c378f403117fa)
++++ /dev/null	(revision 40f772dffff445628ec4346ce08c378f403117fa)
+@@ -1,124 +0,0 @@
+-<?xml version="1.0" encoding="UTF-8"?>
+-<project version="4">
+-  <component name="Palette2">
+-    <group name="Swing">
+-      <item class="com.intellij.uiDesigner.HSpacer" tooltip-text="Horizontal Spacer" icon="/com/intellij/uiDesigner/icons/hspacer.svg" removable="false" auto-create-binding="false" can-attach-label="false">
+-        <default-constraints vsize-policy="1" hsize-policy="6" anchor="0" fill="1" />
+-      </item>
+-      <item class="com.intellij.uiDesigner.VSpacer" tooltip-text="Vertical Spacer" icon="/com/intellij/uiDesigner/icons/vspacer.svg" removable="false" auto-create-binding="false" can-attach-label="false">
+-        <default-constraints vsize-policy="6" hsize-policy="1" anchor="0" fill="2" />
+-      </item>
+-      <item class="javax.swing.JPanel" icon="/com/intellij/uiDesigner/icons/panel.svg" removable="false" auto-create-binding="false" can-attach-label="false">
+-        <default-constraints vsize-policy="3" hsize-policy="3" anchor="0" fill="3" />
+-      </item>
+-      <item class="javax.swing.JScrollPane" icon="/com/intellij/uiDesigner/icons/scrollPane.svg" removable="false" auto-create-binding="false" can-attach-label="true">
+-        <default-constraints vsize-policy="7" hsize-policy="7" anchor="0" fill="3" />
+-      </item>
+-      <item class="javax.swing.JButton" icon="/com/intellij/uiDesigner/icons/button.svg" removable="false" auto-create-binding="true" can-attach-label="false">
+-        <default-constraints vsize-policy="0" hsize-policy="3" anchor="0" fill="1" />
+-        <initial-values>
+-          <property name="text" value="Button" />
+-        </initial-values>
+-      </item>
+-      <item class="javax.swing.JRadioButton" icon="/com/intellij/uiDesigner/icons/radioButton.svg" removable="false" auto-create-binding="true" can-attach-label="false">
+-        <default-constraints vsize-policy="0" hsize-policy="3" anchor="8" fill="0" />
+-        <initial-values>
+-          <property name="text" value="RadioButton" />
+-        </initial-values>
+-      </item>
+-      <item class="javax.swing.JCheckBox" icon="/com/intellij/uiDesigner/icons/checkBox.svg" removable="false" auto-create-binding="true" can-attach-label="false">
+-        <default-constraints vsize-policy="0" hsize-policy="3" anchor="8" fill="0" />
+-        <initial-values>
+-          <property name="text" value="CheckBox" />
+-        </initial-values>
+-      </item>
+-      <item class="javax.swing.JLabel" icon="/com/intellij/uiDesigner/icons/label.svg" removable="false" auto-create-binding="false" can-attach-label="false">
+-        <default-constraints vsize-policy="0" hsize-policy="0" anchor="8" fill="0" />
+-        <initial-values>
+-          <property name="text" value="Label" />
+-        </initial-values>
+-      </item>
+-      <item class="javax.swing.JTextField" icon="/com/intellij/uiDesigner/icons/textField.svg" removable="false" auto-create-binding="true" can-attach-label="true">
+-        <default-constraints vsize-policy="0" hsize-policy="6" anchor="8" fill="1">
+-          <preferred-size width="150" height="-1" />
+-        </default-constraints>
+-      </item>
+-      <item class="javax.swing.JPasswordField" icon="/com/intellij/uiDesigner/icons/passwordField.svg" removable="false" auto-create-binding="true" can-attach-label="true">
+-        <default-constraints vsize-policy="0" hsize-policy="6" anchor="8" fill="1">
+-          <preferred-size width="150" height="-1" />
+-        </default-constraints>
+-      </item>
+-      <item class="javax.swing.JFormattedTextField" icon="/com/intellij/uiDesigner/icons/formattedTextField.svg" removable="false" auto-create-binding="true" can-attach-label="true">
+-        <default-constraints vsize-policy="0" hsize-policy="6" anchor="8" fill="1">
+-          <preferred-size width="150" height="-1" />
+-        </default-constraints>
+-      </item>
+-      <item class="javax.swing.JTextArea" icon="/com/intellij/uiDesigner/icons/textArea.svg" removable="false" auto-create-binding="true" can-attach-label="true">
+-        <default-constraints vsize-policy="6" hsize-policy="6" anchor="0" fill="3">
+-          <preferred-size width="150" height="50" />
+-        </default-constraints>
+-      </item>
+-      <item class="javax.swing.JTextPane" icon="/com/intellij/uiDesigner/icons/textPane.svg" removable="false" auto-create-binding="true" can-attach-label="true">
+-        <default-constraints vsize-policy="6" hsize-policy="6" anchor="0" fill="3">
+-          <preferred-size width="150" height="50" />
+-        </default-constraints>
+-      </item>
+-      <item class="javax.swing.JEditorPane" icon="/com/intellij/uiDesigner/icons/editorPane.svg" removable="false" auto-create-binding="true" can-attach-label="true">
+-        <default-constraints vsize-policy="6" hsize-policy="6" anchor="0" fill="3">
+-          <preferred-size width="150" height="50" />
+-        </default-constraints>
+-      </item>
+-      <item class="javax.swing.JComboBox" icon="/com/intellij/uiDesigner/icons/comboBox.svg" removable="false" auto-create-binding="true" can-attach-label="true">
+-        <default-constraints vsize-policy="0" hsize-policy="2" anchor="8" fill="1" />
+-      </item>
+-      <item class="javax.swing.JTable" icon="/com/intellij/uiDesigner/icons/table.svg" removable="false" auto-create-binding="true" can-attach-label="false">
+-        <default-constraints vsize-policy="6" hsize-policy="6" anchor="0" fill="3">
+-          <preferred-size width="150" height="50" />
+-        </default-constraints>
+-      </item>
+-      <item class="javax.swing.JList" icon="/com/intellij/uiDesigner/icons/list.svg" removable="false" auto-create-binding="true" can-attach-label="false">
+-        <default-constraints vsize-policy="6" hsize-policy="2" anchor="0" fill="3">
+-          <preferred-size width="150" height="50" />
+-        </default-constraints>
+-      </item>
+-      <item class="javax.swing.JTree" icon="/com/intellij/uiDesigner/icons/tree.svg" removable="false" auto-create-binding="true" can-attach-label="false">
+-        <default-constraints vsize-policy="6" hsize-policy="6" anchor="0" fill="3">
+-          <preferred-size width="150" height="50" />
+-        </default-constraints>
+-      </item>
+-      <item class="javax.swing.JTabbedPane" icon="/com/intellij/uiDesigner/icons/tabbedPane.svg" removable="false" auto-create-binding="true" can-attach-label="false">
+-        <default-constraints vsize-policy="3" hsize-policy="3" anchor="0" fill="3">
+-          <preferred-size width="200" height="200" />
+-        </default-constraints>
+-      </item>
+-      <item class="javax.swing.JSplitPane" icon="/com/intellij/uiDesigner/icons/splitPane.svg" removable="false" auto-create-binding="false" can-attach-label="false">
+-        <default-constraints vsize-policy="3" hsize-policy="3" anchor="0" fill="3">
+-          <preferred-size width="200" height="200" />
+-        </default-constraints>
+-      </item>
+-      <item class="javax.swing.JSpinner" icon="/com/intellij/uiDesigner/icons/spinner.svg" removable="false" auto-create-binding="true" can-attach-label="true">
+-        <default-constraints vsize-policy="0" hsize-policy="6" anchor="8" fill="1" />
+-      </item>
+-      <item class="javax.swing.JSlider" icon="/com/intellij/uiDesigner/icons/slider.svg" removable="false" auto-create-binding="true" can-attach-label="false">
+-        <default-constraints vsize-policy="0" hsize-policy="6" anchor="8" fill="1" />
+-      </item>
+-      <item class="javax.swing.JSeparator" icon="/com/intellij/uiDesigner/icons/separator.svg" removable="false" auto-create-binding="false" can-attach-label="false">
+-        <default-constraints vsize-policy="6" hsize-policy="6" anchor="0" fill="3" />
+-      </item>
+-      <item class="javax.swing.JProgressBar" icon="/com/intellij/uiDesigner/icons/progressbar.svg" removable="false" auto-create-binding="true" can-attach-label="false">
+-        <default-constraints vsize-policy="0" hsize-policy="6" anchor="0" fill="1" />
+-      </item>
+-      <item class="javax.swing.JToolBar" icon="/com/intellij/uiDesigner/icons/toolbar.svg" removable="false" auto-create-binding="false" can-attach-label="false">
+-        <default-constraints vsize-policy="0" hsize-policy="6" anchor="0" fill="1">
+-          <preferred-size width="-1" height="20" />
+-        </default-constraints>
+-      </item>
+-      <item class="javax.swing.JToolBar$Separator" icon="/com/intellij/uiDesigner/icons/toolbarSeparator.svg" removable="false" auto-create-binding="false" can-attach-label="false">
+-        <default-constraints vsize-policy="0" hsize-policy="0" anchor="0" fill="1" />
+-      </item>
+-      <item class="javax.swing.JScrollBar" icon="/com/intellij/uiDesigner/icons/scrollbar.svg" removable="false" auto-create-binding="true" can-attach-label="false">
+-        <default-constraints vsize-policy="6" hsize-policy="0" anchor="0" fill="2" />
+-      </item>
+-    </group>
+-  </component>
+-</project>
+\ No newline at end of file
+Index: src/app/MainApp.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package app;\n\nimport models.Model;\nimport views.View;\n\nimport javax.swing.*;\n\n/**\n * Siin klassis on meetod mida Java Virtual Machine (JVM) otsib (main). Sellest meetodist käivitaatakse rakendus\n */\npublic class MainApp {\n    /**\n     * Klassi MainApp konstruktor\n     */\n    public MainApp() {\n        initializeUI(); // Loob GUI\n    }\n\n    /**\n     * See meetod loob tegelikkuses kogu rakenduse.\n     */\n    private void initializeUI() {\n        Model model = new Model();\n        View view = new View(model); // Loome JFrame ja kõik JPanel ja sinna peale minevad JComponents\n\n        view.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // JFRame sulgemis nupu tegevus (Sulge)\n        view.pack(); // \"Raputa\" komponendid paika\n        view.setLocationRelativeTo(null); // JFRame asukoht (ekraani keskel)\n        view.setVisible(true); // Tee JFrame nähtavaks\n    }\n\n    /**\n     * Meetod millega käivitatakse rakendus\n     * @param args käsurealt loetavad argumendid (teise andmebaasi kasutamine)\n     */\n    public static void main(String[] args) {\n        SwingUtilities.invokeLater(MainApp::new);\n    }\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/app/MainApp.java b/src/app/MainApp.java
+--- a/src/app/MainApp.java	(revision 40f772dffff445628ec4346ce08c378f403117fa)
++++ b/src/app/MainApp.java	(date 1718180542000)
+@@ -1,9 +1,11 @@
+ package app;
+ 
++import controllers.Controller;
+ import models.Model;
+ import views.View;
+ 
+ import javax.swing.*;
++import java.io.File;
+ 
+ /**
+  * Siin klassis on meetod mida Java Virtual Machine (JVM) otsib (main). Sellest meetodist käivitaatakse rakendus
+@@ -12,17 +14,17 @@
+     /**
+      * Klassi MainApp konstruktor
+      */
+-    public MainApp() {
+-        initializeUI(); // Loob GUI
++    public MainApp(String dbName) {
++        initializeUI(dbName);
+     }
+ 
+     /**
+      * See meetod loob tegelikkuses kogu rakenduse.
+      */
+-    private void initializeUI() {
+-        Model model = new Model();
++    private void initializeUI(String dbName) {
++        Model model = new Model(dbName);
+         View view = new View(model); // Loome JFrame ja kõik JPanel ja sinna peale minevad JComponents
+-
++        new Controller(model, view);    // Loome kontrolleri nuppude ja Comboboxi jaoks
+         view.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // JFRame sulgemis nupu tegevus (Sulge)
+         view.pack(); // "Raputa" komponendid paika
+         view.setLocationRelativeTo(null); // JFRame asukoht (ekraani keskel)
+@@ -31,9 +33,25 @@
+ 
+     /**
+      * Meetod millega käivitatakse rakendus
++     *
+      * @param args käsurealt loetavad argumendid (teise andmebaasi kasutamine)
+      */
+     public static void main(String[] args) {
+-        SwingUtilities.invokeLater(MainApp::new);
++
++        SwingUtilities.invokeLater(new Runnable() {
++            @Override
++            public void run() {
++                String dbName = null;
++                if (args.length > 0) {
++                    // stringi massiiv on suurem võrdne ühega . Käsureal on lisa infot, huvitab 1.
++                    File file = new File(args[0]); // Teeme käsureal stringi File objektiks
++                    if (file.exists() && !file.isDirectory()) {
++                        // Fail on olemas ja see pole kaust
++                        dbName = args[0]; // Rakendusele uus andmebaasi fail
++                    }
++                }
++                new MainApp(dbName);
++            }
++        });
+     }
+ }
+Index: src/views/panels/Settings.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package views.panels;\n\nimport models.Model;\n\nimport javax.swing.*;\nimport java.awt.*;\n\n/**\n * See on vaheleht Seaded paneel ehk avaleht. Siit saab valida mängu jaoks sõna kategooria ja käivitada mängu. See on\n * üks kolmest vahelehest (esimene). JPanel vaikimisi (default) aknahaldur (Layout Manager) on FlowLayout.\n */\npublic class Settings extends JPanel {\n    /**\n     * Klassisisene mudel, mille väärtus saadakse View konstruktorist ja loodud MainApp-is\n     */\n    private Model model;\n    /**\n     * GridBagLayout jaoks JComponent paigutamiseks \"Excel\" variandis\n     */\n    private GridBagConstraints gbc = new GridBagConstraints();\n    /**\n     * See silt (JLabel) näitab reaalset kuupäeva ja jooksvat kellaaega\n     */\n    private JLabel lblRealTime;\n    /**\n     * Sisaldab teksti \"Sõna kategorgooria\"\n     */\n    private JLabel lblCategory;\n    /**\n     * Sisaldab äraarvatava sõna kategooriat (andmebaasist). Algul \"Kõik kategooriad\"\n     */\n    private JComboBox<String> cmbCategory;\n    /**\n     * Uue mängu alustamise nupp\n     */\n    private JButton btnNewGame;\n    /**\n     * TODO Selle nupu vajalikkus on küsimärgi all :)\n     * Suunab vahelehele Edetabel\n     */\n    private JButton btnLeaderboard;\n\n    /**\n     * Settings JPanel konstruktor\n     * @param model mudel mis loodud MainApp-is\n     */\n    public Settings(Model model) {\n        this.model = model;\n\n        setBackground(new Color(255,250,200)); // JSettings paneeli taustavärv\n\n        gbc.fill = GridBagConstraints.HORIZONTAL; // Täidab lahtri horisontaalselt (kõik lahtrid on \"sama laiad\")\n        gbc.insets = new Insets(2,2,2,2); // Iga lahtri ümber 2px tühja ruumi\n\n        JPanel components = new JPanel(new GridBagLayout()); // Siia pannakse kõik komponendid settings paneeli omad\n        components.setBackground(new Color(140,185,250)); // Komponentide paneeli tausta värv\n\n        /*\n         Kuna components panel on Settings konstruktoris loodud ei saa ma seda paneeli mujal kasutada, kui annan\n         argumendina kaasa JPaneli meetodile ja saan teises meetodis seda sama paneeli kasutada. Siia on vaja ju\n         komponendid peale panna\n         */\n        setupUIComponents(components);\n\n        add(components); // Paiguta JPanel component settings (this.) panelile\n    }\n\n    /**\n     * Meetod mis loob kõik komponendid settings paneelile\n     * @param components paneel kuhu komponendid paigutada\n     */\n    private void setupUIComponents(JPanel components) {\n        // Esimene rida üle kahhe veeru kuupäev ja kellaaja JLabel\n        lblRealTime = new JLabel(\"Siia tuleb reaalne aeg\", JLabel.CENTER);\n        gbc.gridx = 0; // Esimene veerg (column)\n        gbc.gridy = 0; // Esimene rida (row)\n        gbc.gridwidth = 2; // Pane kaks veergu kokku (merge)\n        components.add(lblRealTime, gbc); // Pane objekt paneelile\n\n        // Teine rida Silt ja Rippmenüü\n        lblCategory = new JLabel(\"Sõna kategooria\");\n        gbc.gridx = 0;\n        gbc.gridy = 1;\n        gbc.gridwidth = 1; // Muuda tagasi üks komponent veergu\n        components.add(lblCategory, gbc);\n\n        // TODO muuta JComboBox sulgude sisu\n        cmbCategory = new JComboBox<>(new String[]{model.getChooseCategory()}); // Teksti massiiv ühe elemendiga\n        gbc.gridx = 1;\n        gbc.gridy = 1;\n        components.add(cmbCategory, gbc);\n\n        // Kolmas rida kaks nuppu kõrvuti. Teine nupp küsitav :)\n        btnNewGame = new JButton(\"Uus mäng\");\n        gbc.gridx = 0;\n        gbc.gridy = 2;\n        components.add(btnNewGame, gbc);\n\n        btnLeaderboard = new JButton(\"Edetabel\");\n        gbc.gridx = 1;\n        gbc.gridy = 2;\n        components.add(btnLeaderboard, gbc);\n\n    }\n\n    // Komponentide getterid\n\n    public JLabel getLblRealTime() {\n        return lblRealTime;\n    }\n\n    public JComboBox<String> getCmbCategory() {\n        return cmbCategory;\n    }\n\n    public JButton getBtnNewGame() {\n        return btnNewGame;\n    }\n\n    public JButton getBtnLeaderboard() {\n        return btnLeaderboard;\n    }\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/views/panels/Settings.java b/src/views/panels/Settings.java
+--- a/src/views/panels/Settings.java	(revision 40f772dffff445628ec4346ce08c378f403117fa)
++++ b/src/views/panels/Settings.java	(date 1718182474000)
+@@ -31,6 +31,10 @@
+      */
+     private JComboBox<String> cmbCategory;
+     /**
++     * Silt failinime jaoks
++     */
++    private JLabel lblFile;
++    /**
+      * Uue mängu alustamise nupp
+      */
+     private JButton btnNewGame;
+@@ -42,18 +46,19 @@
+ 
+     /**
+      * Settings JPanel konstruktor
++     *
+      * @param model mudel mis loodud MainApp-is
+      */
+     public Settings(Model model) {
+         this.model = model;
+ 
+-        setBackground(new Color(255,250,200)); // JSettings paneeli taustavärv
++        setBackground(new Color(255, 250, 200)); // JSettings paneeli taustavärv
+ 
+         gbc.fill = GridBagConstraints.HORIZONTAL; // Täidab lahtri horisontaalselt (kõik lahtrid on "sama laiad")
+-        gbc.insets = new Insets(2,2,2,2); // Iga lahtri ümber 2px tühja ruumi
++        gbc.insets = new Insets(2, 2, 2, 2); // Iga lahtri ümber 2px tühja ruumi
+ 
+         JPanel components = new JPanel(new GridBagLayout()); // Siia pannakse kõik komponendid settings paneeli omad
+-        components.setBackground(new Color(140,185,250)); // Komponentide paneeli tausta värv
++        components.setBackground(new Color(140, 185, 250)); // Komponentide paneeli tausta värv
+ 
+         /*
+          Kuna components panel on Settings konstruktoris loodud ei saa ma seda paneeli mujal kasutada, kui annan
+@@ -67,6 +72,7 @@
+ 
+     /**
+      * Meetod mis loob kõik komponendid settings paneelile
++     *
+      * @param components paneel kuhu komponendid paigutada
+      */
+     private void setupUIComponents(JPanel components) {
+@@ -85,20 +91,35 @@
+         components.add(lblCategory, gbc);
+ 
+         // TODO muuta JComboBox sulgude sisu
+-        cmbCategory = new JComboBox<>(new String[]{model.getChooseCategory()}); // Teksti massiiv ühe elemendiga
++        // cmbCategory = new JComboBox<>(new String[]{model.getChooseCategory()});
++        cmbCategory = new JComboBox<>(model.getCbmCategories()); // Teksti massiiv ühe elemendiga
+         gbc.gridx = 1;
+         gbc.gridy = 1;
+         components.add(cmbCategory, gbc);
+ 
++        // Uus vaherida
++        // Seaded vahelehele lisa label kasutusel oleva andmebaasi nimega (ilma kaustateeta) - Tunnis iseseisvalt.
++        // Enne nuppe, üle kahe veeru, rohelise teksti värviga. Keskele. Hoopis teeme punase
++        // Kirjastiil Verdana või Courier New
++        lblFile = new JLabel(model.getDatabaseFile(), JLabel.CENTER);
++        lblFile.setForeground(Color.RED);
++        lblFile.setFont(new Font("Verdana", Font.BOLD, 14));
++        gbc.gridx = 0;
++        gbc.gridy = 2;
++        gbc.gridwidth = 2; // Merge across two columns
++        components.add(lblFile, gbc);
++
++
+         // Kolmas rida kaks nuppu kõrvuti. Teine nupp küsitav :)
+         btnNewGame = new JButton("Uus mäng");
+         gbc.gridx = 0;
+-        gbc.gridy = 2;
++        gbc.gridy = 3;
++        gbc.gridwidth = 1;
+         components.add(btnNewGame, gbc);
+ 
+         btnLeaderboard = new JButton("Edetabel");
+         gbc.gridx = 1;
+-        gbc.gridy = 2;
++        gbc.gridy = 3;
+         components.add(btnLeaderboard, gbc);
+ 
+     }
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"AutoImportSettings\">\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\n  </component>\n  <component name=\"ChangeListManager\">\n    <list default=\"true\" id=\"c3a9a89e-df2f-41b6-935e-2b222c675b42\" name=\"Changes\" comment=\"Muudetud mudelit, README, Settings Database ja listud ComboboxChange.\" />\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\n  </component>\n  <component name=\"FileTemplateManagerImpl\">\n    <option name=\"RECENT_TEMPLATES\">\n      <list>\n        <option value=\"package-info\" />\n        <option value=\"Class\" />\n      </list>\n    </option>\n  </component>\n  <component name=\"Git.Settings\">\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\n  </component>\n  <component name=\"GitHubPullRequestSearchHistory\"><![CDATA[{\n  \"lastFilter\": {\n    \"state\": \"OPEN\",\n    \"assignee\": \"OkramL\"\n  }\n}]]></component>\n  <component name=\"GithubPullRequestsUISettings\"><![CDATA[{\n  \"selectedUrlAndAccountId\": {\n    \"url\": \"https://github.com/OkramL/Hangman_2024_Student.git\",\n    \"accountId\": \"ae3227ef-cd68-4eb9-9271-568b491ec1f3\"\n  }\n}]]></component>\n  <component name=\"ProjectColorInfo\"><![CDATA[{\n  \"associatedIndex\": 5\n}]]></component>\n  <component name=\"ProjectId\" id=\"2hdPGzeItCDnRMzaDyQZl0xX1y4\" />\n  <component name=\"ProjectLevelVcsManager\" settingsEditedManually=\"true\">\n    <ConfirmationsSetting value=\"2\" id=\"Add\" />\n  </component>\n  <component name=\"ProjectViewState\">\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\n    <option name=\"showLibraryContents\" value=\"true\" />\n  </component>\n  <component name=\"PropertiesComponent\"><![CDATA[{\n  \"keyToString\": {\n    \"ASKED_ADD_EXTERNAL_FILES\": \"true\",\n    \"Application.MainApp.executor\": \"Run\",\n    \"RunOnceActivity.ShowReadmeOnStart\": \"true\",\n    \"SHARE_PROJECT_CONFIGURATION_FILES\": \"true\",\n    \"git-widget-placeholder\": \"master\",\n    \"kotlin-language-version-configured\": \"true\",\n    \"last_opened_file_path\": \"C:/Users/Marko/Documents/JavaApps/Hangman_2024\",\n    \"node.js.detected.package.eslint\": \"true\",\n    \"node.js.detected.package.tslint\": \"true\",\n    \"node.js.selected.package.eslint\": \"(autodetect)\",\n    \"node.js.selected.package.tslint\": \"(autodetect)\",\n    \"nodejs_package_manager_path\": \"npm\",\n    \"project.structure.last.edited\": \"Modules\",\n    \"project.structure.proportion\": \"0.0\",\n    \"project.structure.side.proportion\": \"0.0\",\n    \"settings.editor.selected.configurable\": \"Errors\",\n    \"vue.rearranger.settings.migration\": \"true\"\n  }\n}]]></component>\n  <component name=\"RecentsManager\">\n    <key name=\"MoveFile.RECENT_KEYS\">\n      <recent name=\"C:\\Users\\Marko\\Documents\\JavaApps\\Hangman_2024_Student\" />\n    </key>\n  </component>\n  <component name=\"RunManager\">\n    <configuration name=\"MainApp\" type=\"Application\" factoryName=\"Application\">\n      <option name=\"MAIN_CLASS_NAME\" value=\"app.MainApp\" />\n      <module name=\"Hangman_2024_Student\" />\n      <method v=\"2\">\n        <option name=\"Make\" enabled=\"true\" />\n      </method>\n    </configuration>\n  </component>\n  <component name=\"SharedIndexes\">\n    <attachedChunks>\n      <set>\n        <option value=\"bundled-jdk-9f38398b9061-39b83d9b5494-intellij.indexing.shared.core-IU-241.17011.79\" />\n        <option value=\"bundled-js-predefined-1d06a55b98c1-0b3e54e931b4-JavaScript-IU-241.17011.79\" />\n      </set>\n    </attachedChunks>\n  </component>\n  <component name=\"SpellCheckerSettings\" RuntimeDictionaries=\"0\" Folders=\"0\" CustomDictionaries=\"0\" DefaultDictionary=\"application-level\" UseSingleDictionary=\"true\" transferred=\"true\" />\n  <component name=\"TaskManager\">\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\n      <changelist id=\"c3a9a89e-df2f-41b6-935e-2b222c675b42\" name=\"Changes\" comment=\"\" />\n      <created>1717920889536</created>\n      <option name=\"number\" value=\"Default\" />\n      <option name=\"presentableId\" value=\"Default\" />\n      <updated>1717920889536</updated>\n      <workItem from=\"1717920890548\" duration=\"19722000\" />\n    </task>\n    <task id=\"LOCAL−00001\" summary=\"First Commit\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1717935860316</created>\n      <option name=\"number\" value=\"LOCAL−00001\" />\n      <option name=\"presentableId\" value=\"LOCAL−00001\" />\n      <updated>1717935860316</updated>\n    </task>\n    <task id=\"LOCAL−00002\" summary=\"README.md õigesse kohta\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1717936133300</created>\n      <option name=\"number\" value=\"LOCAL−00002\" />\n      <option name=\"presentableId\" value=\"LOCAL−00002\" />\n      <updated>1717936133300</updated>\n    </task>\n    <task id=\"LOCAL−00003\" summary=\"Muudetud mudelit, README, Settings Database ja listud ComboboxChange.\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1717956015139</created>\n      <option name=\"number\" value=\"LOCAL−00003\" />\n      <option name=\"presentableId\" value=\"LOCAL−00003\" />\n      <updated>1717956015139</updated>\n    </task>\n    <option name=\"localTasksCounter\" value=\"4\" />\n    <servers />\n  </component>\n  <component name=\"TypeScriptGeneratedFilesManager\">\n    <option name=\"version\" value=\"3\" />\n  </component>\n  <component name=\"Vcs.Log.Tabs.Properties\">\n    <option name=\"TAB_STATES\">\n      <map>\n        <entry key=\"MAIN\">\n          <value>\n            <State />\n          </value>\n        </entry>\n      </map>\n    </option>\n  </component>\n  <component name=\"VcsManagerConfiguration\">\n    <option name=\"ADD_EXTERNAL_FILES_SILENTLY\" value=\"true\" />\n    <MESSAGE value=\"First Commit\" />\n    <MESSAGE value=\"README.md õigesse kohta\" />\n    <MESSAGE value=\"Muudetud mudelit, README, Settings Database ja listud ComboboxChange.\" />\n    <option name=\"LAST_COMMIT_MESSAGE\" value=\"Muudetud mudelit, README, Settings Database ja listud ComboboxChange.\" />\n  </component>\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+--- a/.idea/workspace.xml	(revision 40f772dffff445628ec4346ce08c378f403117fa)
++++ b/.idea/workspace.xml	(date 1718199313842)
+@@ -4,7 +4,43 @@
+     <option name="autoReloadType" value="SELECTIVE" />
+   </component>
+   <component name="ChangeListManager">
+-    <list default="true" id="c3a9a89e-df2f-41b6-935e-2b222c675b42" name="Changes" comment="Muudetud mudelit, README, Settings Database ja listud ComboboxChange." />
++    <list default="true" id="efca4f1a-7f3e-437b-940a-65daf66c03fe" name="Changes" comment="">
++      <change afterPath="$PROJECT_DIR$/.idea/libraries/sqlite_jdbc_3_41_2_1.xml" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/Hangman_2024_Student 2.iml" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/src/controllers/Controller.java" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/src/listeners/ButtonCancel.java" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/src/listeners/ButtonNew.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" />
++      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/.idea/uiDesigner.xml" beforeDir="false" />
++      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/Hangman_2024_Student.iml" beforeDir="false" afterPath="$PROJECT_DIR$/Hangman_2024_Student.iml" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/app/MainApp.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/MainApp.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/app/package-info.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/package-info.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/controllers/package-info.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/controllers/package-info.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/helpers/GameTimer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/helpers/GameTimer.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/helpers/RealTimer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/helpers/RealTimer.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/helpers/TextFieldLimit.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/helpers/TextFieldLimit.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/helpers/package-info.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/helpers/package-info.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/listeners/ComboboxChange.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/listeners/ComboboxChange.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/listeners/package-info.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/listeners/package-info.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/models/Database.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/models/Database.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/models/Model.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/models/Model.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/models/datastructures/DataScore.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/models/datastructures/DataScore.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/models/datastructures/DataWords.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/models/datastructures/DataWords.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/models/datastructures/package-info.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/models/datastructures/package-info.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/models/package-info.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/models/package-info.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/views/View.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/views/View.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/views/package-info.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/views/package-info.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/views/panels/GameBoard.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/views/panels/GameBoard.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/views/panels/LeaderBoard.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/views/panels/LeaderBoard.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/views/panels/Settings.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/views/panels/Settings.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/views/panels/package-info.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/views/panels/package-info.java" afterDir="false" />
++    </list>
+     <option name="SHOW_DIALOG" value="false" />
+     <option name="HIGHLIGHT_CONFLICTS" value="true" />
+     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+@@ -13,7 +49,6 @@
+   <component name="FileTemplateManagerImpl">
+     <option name="RECENT_TEMPLATES">
+       <list>
+-        <option value="package-info" />
+         <option value="Class" />
+       </list>
+     </option>
+@@ -21,59 +56,43 @@
+   <component name="Git.Settings">
+     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+   </component>
+-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+-  "lastFilter": {
+-    "state": "OPEN",
+-    "assignee": "OkramL"
+-  }
+-}]]></component>
+-  <component name="GithubPullRequestsUISettings"><![CDATA[{
+-  "selectedUrlAndAccountId": {
+-    "url": "https://github.com/OkramL/Hangman_2024_Student.git",
+-    "accountId": "ae3227ef-cd68-4eb9-9271-568b491ec1f3"
+-  }
+-}]]></component>
+-  <component name="ProjectColorInfo"><![CDATA[{
+-  "associatedIndex": 5
+-}]]></component>
+-  <component name="ProjectId" id="2hdPGzeItCDnRMzaDyQZl0xX1y4" />
+-  <component name="ProjectLevelVcsManager" settingsEditedManually="true">
+-    <ConfirmationsSetting value="2" id="Add" />
+-  </component>
++  <component name="ProjectColorInfo">{
++  &quot;associatedIndex&quot;: 1
++}</component>
++  <component name="ProjectId" id="2hlyXSaQ0vnXrioFWr1HqYLiXos" />
+   <component name="ProjectViewState">
+     <option name="hideEmptyMiddlePackages" value="true" />
+     <option name="showLibraryContents" value="true" />
+   </component>
+   <component name="PropertiesComponent"><![CDATA[{
+   "keyToString": {
+-    "ASKED_ADD_EXTERNAL_FILES": "true",
+     "Application.MainApp.executor": "Run",
++    "Application.Unnamed.executor": "Run",
+     "RunOnceActivity.ShowReadmeOnStart": "true",
+     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+     "git-widget-placeholder": "master",
+     "kotlin-language-version-configured": "true",
+-    "last_opened_file_path": "C:/Users/Marko/Documents/JavaApps/Hangman_2024",
++    "last_opened_file_path": "/Users/haldi/Desktop/KehtnaTAK23/Java/Hangman_2024_Student 2",
+     "node.js.detected.package.eslint": "true",
+     "node.js.detected.package.tslint": "true",
+     "node.js.selected.package.eslint": "(autodetect)",
+     "node.js.selected.package.tslint": "(autodetect)",
+     "nodejs_package_manager_path": "npm",
+-    "project.structure.last.edited": "Modules",
++    "project.structure.last.edited": "Artifacts",
+     "project.structure.proportion": "0.0",
+-    "project.structure.side.proportion": "0.0",
+-    "settings.editor.selected.configurable": "Errors",
++    "project.structure.side.proportion": "0.2",
+     "vue.rearranger.settings.migration": "true"
+   }
+ }]]></component>
+   <component name="RecentsManager">
+-    <key name="MoveFile.RECENT_KEYS">
+-      <recent name="C:\Users\Marko\Documents\JavaApps\Hangman_2024_Student" />
++    <key name="CreateClassDialog.RecentsKey">
++      <recent name="listeners" />
+     </key>
+   </component>
+   <component name="RunManager">
+     <configuration name="MainApp" type="Application" factoryName="Application">
+       <option name="MAIN_CLASS_NAME" value="app.MainApp" />
+-      <module name="Hangman_2024_Student" />
++      <module name="Hangman_2024_Student 2" />
+       <method v="2">
+         <option name="Make" enabled="true" />
+       </method>
+@@ -82,64 +101,25 @@
+   <component name="SharedIndexes">
+     <attachedChunks>
+       <set>
+-        <option value="bundled-jdk-9f38398b9061-39b83d9b5494-intellij.indexing.shared.core-IU-241.17011.79" />
+-        <option value="bundled-js-predefined-1d06a55b98c1-0b3e54e931b4-JavaScript-IU-241.17011.79" />
++        <option value="bundled-jdk-9f38398b9061-39b83d9b5494-intellij.indexing.shared.core-IU-241.17890.1" />
++        <option value="bundled-js-predefined-1d06a55b98c1-0b3e54e931b4-JavaScript-IU-241.17890.1" />
+       </set>
+     </attachedChunks>
+   </component>
+   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+   <component name="TaskManager">
+     <task active="true" id="Default" summary="Default task">
+-      <changelist id="c3a9a89e-df2f-41b6-935e-2b222c675b42" name="Changes" comment="" />
+-      <created>1717920889536</created>
++      <changelist id="efca4f1a-7f3e-437b-940a-65daf66c03fe" name="Changes" comment="" />
++      <created>1718182998649</created>
+       <option name="number" value="Default" />
+       <option name="presentableId" value="Default" />
+-      <updated>1717920889536</updated>
+-      <workItem from="1717920890548" duration="19722000" />
++      <updated>1718182998649</updated>
++      <workItem from="1718183000000" duration="9543000" />
++      <workItem from="1718195264093" duration="4040000" />
+     </task>
+-    <task id="LOCAL−00001" summary="First Commit">
+-      <option name="closed" value="true" />
+-      <created>1717935860316</created>
+-      <option name="number" value="LOCAL−00001" />
+-      <option name="presentableId" value="LOCAL−00001" />
+-      <updated>1717935860316</updated>
+-    </task>
+-    <task id="LOCAL−00002" summary="README.md õigesse kohta">
+-      <option name="closed" value="true" />
+-      <created>1717936133300</created>
+-      <option name="number" value="LOCAL−00002" />
+-      <option name="presentableId" value="LOCAL−00002" />
+-      <updated>1717936133300</updated>
+-    </task>
+-    <task id="LOCAL−00003" summary="Muudetud mudelit, README, Settings Database ja listud ComboboxChange.">
+-      <option name="closed" value="true" />
+-      <created>1717956015139</created>
+-      <option name="number" value="LOCAL−00003" />
+-      <option name="presentableId" value="LOCAL−00003" />
+-      <updated>1717956015139</updated>
+-    </task>
+-    <option name="localTasksCounter" value="4" />
+     <servers />
+   </component>
+   <component name="TypeScriptGeneratedFilesManager">
+     <option name="version" value="3" />
+   </component>
+-  <component name="Vcs.Log.Tabs.Properties">
+-    <option name="TAB_STATES">
+-      <map>
+-        <entry key="MAIN">
+-          <value>
+-            <State />
+-          </value>
+-        </entry>
+-      </map>
+-    </option>
+-  </component>
+-  <component name="VcsManagerConfiguration">
+-    <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
+-    <MESSAGE value="First Commit" />
+-    <MESSAGE value="README.md õigesse kohta" />
+-    <MESSAGE value="Muudetud mudelit, README, Settings Database ja listud ComboboxChange." />
+-    <option name="LAST_COMMIT_MESSAGE" value="Muudetud mudelit, README, Settings Database ja listud ComboboxChange." />
+-  </component>
+ </project>
+\ No newline at end of file
+Index: src/listeners/ComboboxChange.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package listeners;\n\nimport models.Model;\n\nimport java.awt.event.ItemEvent;\nimport java.awt.event.ItemListener;\n\npublic class ComboboxChange implements ItemListener {\n    private final Model model;\n\n    public ComboboxChange(Model model) {\n        this.model = model;\n    }\n\n    @Override\n    public void itemStateChanged(ItemEvent e) {\n        // https://stackoverflow.com/questions/330590/why-is-itemstatechanged-on-jcombobox-is-called-twice-when-changed\n        if(e.getStateChange() == ItemEvent.SELECTED) { // Without this check, two choices will occur in a row\n            model.setSelectedCategory(e.getItem().toString()); // Set selected category for next new game\n            // JOptionPane.showMessageDialog(null, e.getItem().toString()); // for testing\n        }\n    }\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/listeners/ComboboxChange.java b/src/listeners/ComboboxChange.java
+--- a/src/listeners/ComboboxChange.java	(revision 40f772dffff445628ec4346ce08c378f403117fa)
++++ b/src/listeners/ComboboxChange.java	(date 1718178748000)
+@@ -2,6 +2,7 @@
+ 
+ import models.Model;
+ 
++import javax.swing.*;
+ import java.awt.event.ItemEvent;
+ import java.awt.event.ItemListener;
+ 
+@@ -17,7 +18,7 @@
+         // https://stackoverflow.com/questions/330590/why-is-itemstatechanged-on-jcombobox-is-called-twice-when-changed
+         if(e.getStateChange() == ItemEvent.SELECTED) { // Without this check, two choices will occur in a row
+             model.setSelectedCategory(e.getItem().toString()); // Set selected category for next new game
+-            // JOptionPane.showMessageDialog(null, e.getItem().toString()); // for testing
++             JOptionPane.showMessageDialog(null, e.getItem().toString()); // for testing
+         }
+     }
+ }
+Index: .idea/vcs.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"VcsDirectoryMappings\">\n    <mapping directory=\"$PROJECT_DIR$\" vcs=\"Git\" />\n  </component>\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/vcs.xml b/.idea/vcs.xml
+--- a/.idea/vcs.xml	(revision 40f772dffff445628ec4346ce08c378f403117fa)
++++ b/.idea/vcs.xml	(date 1718183004712)
+@@ -1,6 +1,6 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <project version="4">
+   <component name="VcsDirectoryMappings">
+-    <mapping directory="$PROJECT_DIR$" vcs="Git" />
++    <mapping directory="" vcs="Git" />
+   </component>
+ </project>
+\ No newline at end of file
+Index: .idea/modules.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"ProjectModuleManager\">\n    <modules>\n      <module fileurl=\"file://$PROJECT_DIR$/Hangman_2024_Student.iml\" filepath=\"$PROJECT_DIR$/Hangman_2024_Student.iml\" />\n    </modules>\n  </component>\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/modules.xml b/.idea/modules.xml
+--- a/.idea/modules.xml	(revision 40f772dffff445628ec4346ce08c378f403117fa)
++++ b/.idea/modules.xml	(date 1718183004385)
+@@ -2,7 +2,7 @@
+ <project version="4">
+   <component name="ProjectModuleManager">
+     <modules>
+-      <module fileurl="file://$PROJECT_DIR$/Hangman_2024_Student.iml" filepath="$PROJECT_DIR$/Hangman_2024_Student.iml" />
++      <module fileurl="file://$PROJECT_DIR$/Hangman_2024_Student 2.iml" filepath="$PROJECT_DIR$/Hangman_2024_Student 2.iml" />
+     </modules>
+   </component>
+ </project>
+\ No newline at end of file
+Index: .idea/misc.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"ProjectRootManager\" version=\"2\" languageLevel=\"JDK_20\" default=\"true\" project-jdk-name=\"20\" project-jdk-type=\"JavaSDK\">\n    <output url=\"file://$PROJECT_DIR$/out\" />\n  </component>\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/misc.xml b/.idea/misc.xml
+--- a/.idea/misc.xml	(revision 40f772dffff445628ec4346ce08c378f403117fa)
++++ b/.idea/misc.xml	(date 1718199313844)
+@@ -1,6 +1,9 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <project version="4">
+-  <component name="ProjectRootManager" version="2" languageLevel="JDK_20" default="true" project-jdk-name="20" project-jdk-type="JavaSDK">
++  <component name="JavadocGenerationManager">
++    <option name="OUTPUT_DIRECTORY" value="$PROJECT_DIR$/out/JavaDoc" />
++  </component>
++  <component name="ProjectRootManager" version="2" languageLevel="JDK_22" default="true" project-jdk-name="22" project-jdk-type="JavaSDK">
+     <output url="file://$PROJECT_DIR$/out" />
+   </component>
+ </project>
+\ No newline at end of file
